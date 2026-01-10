@@ -1,55 +1,99 @@
 use std::env;
 use std::fs;
-
-struct FileDetails {
-    words: i32,
-    lines: i32,
-    character: i32,
-}
+use std::fs::File;
+use std::io::Read;
+use std::time::Instant;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: mywc <filename>");
-        return;
-    }
+    let filename = match env::args().nth(1) {
+        Some(f) => f,
+        None => {
+            eprintln!("Usage: mywc <filename>");
+            std::process::exit(1);
+        }
+    };
 
-    let filename = &args[1];
-
-    let contents = fs::read_to_string(filename).expect("Should have been able to read the file");
-    let file_details = data_processing(&contents);
+    let start = Instant::now();
+    read_txt_file(&filename);
     println!(
-        "The File {} has {} words, {} lines and {} characters",
-        filename, file_details.words, file_details.lines, file_details.character
+        "Time taken by bytes function: {} ms\n",
+        start.elapsed().as_millis()
+    );
+
+    let start = Instant::now();
+    process_data_using_string_functions(&filename);
+    println!(
+        "Time taken by String function: {} ms\n",
+        start.elapsed().as_millis()
     );
 }
-fn data_processing(content: &str) -> FileDetails {
-    let mut res = FileDetails {
+
+fn read_txt_file(filename: &str) {
+    let mut file = File::open(filename).unwrap();
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).unwrap();
+
+    let mut lines = 0;
+    let mut words = 0;
+    let mut in_word = false;
+
+    for &byte in &buffer {
+        if byte == b'\n' {
+            lines += 1;
+        }
+
+        let is_whitespace = byte == b' ' || byte == b'\n' || byte == b'\t';
+
+        if !is_whitespace && !in_word {
+            words += 1;
+            in_word = true;
+        }
+
+        if is_whitespace {
+            in_word = false;
+        }
+    }
+
+    let bytes = buffer.len();
+    println!("Lines\tWords\tCharacters\tFileName");
+    println!("{:>5}\t{:>5}\t{:>10}\t{}", lines, words, bytes, filename);
+}
+
+struct FileDetails {
+    words: usize,
+    lines: usize,
+    bytes: usize,
+}
+
+fn process_data_using_string_functions(filename: &str) {
+    let contents = fs::read_to_string(filename).expect("Should have been able to read the file");
+
+    let mut details = FileDetails {
         words: 0,
         lines: 0,
-        character: 0,
+        bytes: contents.len(), // bytes, not chars
     };
 
     let mut in_word = false;
 
-    for it in content.chars() {
-        res.character += 1;
-
-        if it == '\n' {
-            res.lines += 1;
+    for ch in contents.chars() {
+        if ch == '\n' {
+            details.lines += 1;
         }
 
-        if it.is_whitespace() {
+        if ch.is_whitespace() {
             in_word = false;
         } else if !in_word {
-            res.words += 1;
+            details.words += 1;
             in_word = true;
         }
     }
 
-    if res.character > 0 {
-        res.lines += 1;
-    }
-
-    res
+    println!("Lines\tWords\tCharacters\tFileName");
+    println!(
+        "{:>5}\t{:>5}\t{:>10}\t{}",
+        details.lines, details.words, details.bytes, filename
+    );
 }
+
+
