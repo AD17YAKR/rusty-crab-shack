@@ -1,9 +1,11 @@
 use std::env;
 use std::time::Instant;
 
+mod basics;
 mod head;
 mod meow;
 mod rusty_wc;
+use basics::read_and_print_from_file::read_using_read_to_string;
 use head::stream_processing::stream_processing_head;
 use meow::bytes_processing::bytes_processing_meow;
 use meow::stream_processing::stream_processing_meow;
@@ -13,8 +15,9 @@ use rusty_wc::stream_processing::stream_processing;
 use rusty_wc::string_processing::string_processing;
 
 fn main() {
-    head();
+    basics();
 }
+
 fn head() {
     let filename = match env::args().nth(1) {
         Some(f) => f,
@@ -36,7 +39,17 @@ fn head() {
 
     stream_processing_head(&filename, n);
 }
+fn basics() {
+    let filename = match env::args().nth(1) {
+        Some(f) => f,
+        None => {
+            eprintln!("Usage: mywc <filename>");
+            std::process::exit(1);
+        }
+    };
 
+    read_using_read_to_string(&filename);
+}
 fn meow() {
     let filename = match env::args().nth(1) {
         Some(f) => f,
